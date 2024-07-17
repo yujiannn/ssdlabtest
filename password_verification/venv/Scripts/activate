@@ -35,7 +35,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\motor\OneDrive\Desktop\Jackson Y2S3\jackson ssd\practical stuff\Test\password_verification\venv"
+VIRTUAL_ENV="C:\Users\motor\OneDrive\Desktop\Jackson Y2S3\jackson ssd\practical stuff\testcicd\password_verification\venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
