@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                // Clone the repository
+                git 'https://your-git-repo-url.git'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build Docker image
+                    sh 'docker build -t password_verification .'
+                }
+            }
+        }
+        stage('Run Docker Container') {
+            steps {
+                script {
+                    // Run Docker container
+                    sh 'docker run -d -p 5000:5000 --name password_verification password_verification'
+                }
+            }
+        }
+        stage('Dependency Check') {
+            steps {
+                script {
+                    // Check dependencies (You can integrate specific dependency checking tools as needed)
+                    sh 'pip check'
+                }
+            }
+        }
+        stage('UI Testing') {
+            steps {
+                script {
+                    // Perform UI testing (You can integrate UI testing tools as needed)
+                    // Example using curl to check if the app is running
+                    sh 'sleep 10' // Wait for the container to be fully up and running
+                    sh 'curl -f http://localhost:5000 || exit 1'
+                }
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                // Cleanup
+                sh 'docker stop password_verification'
+                sh 'docker rm password_verification'
+            }
+        }
+    }
+}
