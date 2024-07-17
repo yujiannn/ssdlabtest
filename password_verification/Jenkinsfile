@@ -1,5 +1,9 @@
 pipeline {
     agent any
+    environment {
+        dockerImage = ''
+        dockerContainer = ''
+    }
     stages {
         stage('Clone Repository') {
             steps {
@@ -9,14 +13,13 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build('password_verification', 'password_verification/')
+                    dockerImage = docker.build('password_verification', 'password_verification/')
                 }
             }
         }
         stage('Run Docker Container') {
             steps {
                 script {
-                    dockerImage = docker.image('password_verification')
                     dockerContainer = dockerImage.run('-p 5000:5000')
                 }
             }
