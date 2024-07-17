@@ -1,18 +1,15 @@
-
 version: '3.8'
 
 services:
   jenkins:
-    image: jenkins/jenkins:lts
+    image: jenkins-docker
+    container_name: jenkins
     ports:
       - "8080:8080"
+      - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-
-  nginx:
-    image: nginx:latest
-    ports:
-      - "80:80"
+      - /var/run/docker.sock:/var/run/docker.sock # Mount Docker socket
 
 volumes:
   jenkins_home:
