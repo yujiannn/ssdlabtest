@@ -61,7 +61,7 @@ pipeline {
             }
         }
                 
-   stage('SonarQube Analysis') {
+        stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     dir('workspace/flask') {
@@ -69,13 +69,14 @@ pipeline {
                         ${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=flask-app \
                         -Dsonar.sources=. \
-                        -Dsonar.host.url=http://127.0.0.1:9000 \
+                        -Dsonar.host.url=http://sonarqube:9000 \
                         -Dsonar.login=${SONAR_TOKEN}
                         '''
                     }
                 }
             }
         }
+        
         stage('Deploy Flask App') {
             steps {
                 script {
