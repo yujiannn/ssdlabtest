@@ -10,19 +10,16 @@ services:
       - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock # Allow Jenkins to use Docker
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false # Skip setup wizard for automation purposes
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
 
   flask-app:
-    build: 
+    build:
       context: ./flask
       dockerfile: Dockerfile
     ports:
       - "5000:5000"
-    environment:
-      - FLASK_APP=app.py
 
 volumes:
   jenkins_home:
-  postgresql_data:
