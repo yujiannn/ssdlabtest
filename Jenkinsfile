@@ -24,16 +24,16 @@ pipeline {
         
         stage('Setup Virtual Environment') {
             steps {
-                dir('workspace') {
+                dir('workspace/flask') {  // Navigate to the flask directory
                     sh 'python3 -m venv $VENV_PATH'
-                    sh '. $VENV_PATH/bin/activate'
                 }
             }
         }
         
-        stage('Install dependencies') {
+        stage('Activate Virtual Environment and Install Dependencies') {
             steps {
-                dir('workspace') {
+                dir('workspace/flask') {  // Navigate to the flask directory
+                    // Activate the virtual environment and install dependencies
                     sh '. $VENV_PATH/bin/activate && pip install -r requirements.txt'
                 }
             }
