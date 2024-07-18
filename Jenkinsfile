@@ -3,10 +3,10 @@ pipeline {
 
     environment {
         VENV_PATH = 'venv'
-        FLASK_APP = 'app.py'
+        FLASK_APP = 'workspace/flask/app.py'  // Corrected the path to the Flask app
         PATH = "$VENV_PATH/bin:$PATH"
         SONARQUBE_SCANNER_HOME = tool name: 'SonarQube Scanner'
-        SONARQUBE_TOKEN = 'squ_49cf1a95dfa351b301269a8f0d6a57dc4f59c179'  // Set your new SonarQube token here
+		SONARQUBE_TOKEN = 'squ_49cf1a95dfa351b301269a8f0d6a57dc4f59c179'  // Set your new SonarQube token here
     }
     
     stages {
