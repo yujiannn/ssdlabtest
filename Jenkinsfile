@@ -56,11 +56,9 @@ pipeline {
         success {
             script {
                 echo 'Deploying Flask App...'
-                // Stop any running container on port 5000
-                sh 'docker ps -q --filter "ancestor=test_flask-app" | xargs -r docker stop'
                 sh 'docker-compose up -d flask-app'
                 sh 'sleep 10'
-                sh 'curl -I http://localhost:5000 || echo "Flask app not running on port 5000"'
+                sh 'curl -I http://localhost:5001 || echo "Flask app not running on port 5001"'
             }
         }
         
