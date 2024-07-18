@@ -28,9 +28,9 @@ pipeline {
         stage('Setup Virtual Environment') {
             steps {
                 script {
-                    sh 'bash -c "python3 -m venv $VENV_PATH"'
+                    sh 'python3 -m venv $VENV_PATH'
                     // Activate the virtual environment
-                    sh 'bash -c "source $VENV_PATH/bin/activate"'
+                    sh 'source $VENV_PATH/bin/activate'
                 }
             }
         }
@@ -38,7 +38,7 @@ pipeline {
         stage('Install dependencies') {
             steps {
                 // Install any dependencies listed in requirements.txt
-                sh 'bash -c "source $VENV_PATH/bin/activate && pip install -r requirements.txt"' 
+                sh 'source $VENV_PATH/bin/activate && pip install -r requirements.txt'
             }
         }
         
@@ -53,31 +53,24 @@ pipeline {
                 echo 'Running UI tests...'
             }
         }
-        
-        stage('Deploy Flask App') {
-            steps {
-                script {
-                    // Start the Flask app container
-                    sh 'docker-compose up -d flask-app'
-                    // Wait to ensure the app has time to start
-                    sh 'sleep 10'
-                    // Check if Flask app is running
-                    sh 'curl -I http://localhost:5000 || echo "Flask app not running on port 5000"'
-                }
-            }
-        }
     }
     
     post {
-        always {
+        success {
             script {
-                echo 'Cleaning up...'
-                // Bring down the docker-compose services
-                sh 'docker-compose down'
-                // Remove the virtual environment
-                dir('workspace') {
-                    sh 'rm -rf $VENV_PATH'
-                }
+                echo 'Deploying Flask App...'
+                // Start the Flask app container
+                sh 'docker-compose up -d flask-app'
+                // Wait to ensure the app has time to start
+                sh 'sleep 10'
+                // Check if Flask app is running
+                sh 'curl -I http://localhost:5000 || echo "Flask app not running on port 5000"'
+            }
+        }
+        
+        failure {
+            script {
+                echo 'Build failed, not deploying Flask app.'
             }
         }
     }
