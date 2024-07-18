@@ -44,6 +44,9 @@ pipeline {
         stage('Dependency Check') {
             steps {
                 dir('workspace/flask') {
+                    // Print the dependency check home directory for debugging
+                    sh 'echo $DEPENDENCY_CHECK_HOME'
+                    sh 'ls -l $DEPENDENCY_CHECK_HOME'
                     sh '''
                     ${DEPENDENCY_CHECK_HOME}/bin/dependency-check.sh --project "Flask App" --scan . --format "ALL" --out dependency-check-report
                     '''
