@@ -28,11 +28,9 @@ pipeline {
         stage('Setup Virtual Environment') {
             steps {
                 script {
-                    
                     sh 'bash -c "python3 -m venv $VENV_PATH"'
                     // Activate the virtual environment
                     sh 'bash -c "source $VENV_PATH/bin/activate"'
-                   
                 }
             }
         }
@@ -41,7 +39,6 @@ pipeline {
             steps {
                 // Install any dependencies listed in requirements.txt
                 sh 'bash -c "source $VENV_PATH/bin/activate && pip install -r requirements.txt"' 
-                
             }
         }
         
@@ -59,11 +56,14 @@ pipeline {
         
         stage('Deploy Flask App') {
             steps {
-                sh 'bash -c "source $VENV_PATH/bin/activate && FLASK_APP=$FLASK_APP flask run --host=0.0.0.0 --port=5000 &"'
-                // Wait to ensure the app has time to start
-                sh 'sleep 10'
-                // Check if Flask app is running
-                sh 'curl -I http://localhost:5000 || echo "Flask app not running on port 5000"'
+                script {
+                    // Start the Flask app container
+                    sh 'docker-compose up -d flask-app'
+                    // Wait to ensure the app has time to start
+                    sh 'sleep 10'
+                    // Check if Flask app is running
+                    sh 'curl -I http://localhost:5000 || echo "Flask app not running on port 5000"'
+                }
             }
         }
     }
@@ -72,7 +72,9 @@ pipeline {
         always {
             script {
                 echo 'Cleaning up...'
-                // Ensure we are in a workspace directory
+                // Bring down the docker-compose services
+                sh 'docker-compose down'
+                // Remove the virtual environment
                 dir('workspace') {
                     sh 'rm -rf $VENV_PATH'
                 }
