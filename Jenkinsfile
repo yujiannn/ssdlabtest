@@ -82,6 +82,14 @@ pipeline {
             }
         }
         
+        stage('Integration Testing') {
+            steps {
+                dir('workspace/flask') {
+                    sh '. $VENV_PATH/bin/activate && pytest --junitxml=integration-test-results.xml'
+                }
+            }
+        }
+        
         stage('Build Docker Image') {
             steps {
                 dir('workspace/flask') {
@@ -131,6 +139,7 @@ pipeline {
         }
         always {
             archiveArtifacts artifacts: 'workspace/flask/dependency-check-report/*.*', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'workspace/flask/integration-test-results.xml', allowEmptyArchive: true
         }
     }
 }
