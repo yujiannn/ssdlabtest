@@ -1,23 +1,48 @@
 pipeline {
     agent any
-    options {
-        skipDefaultCheckout(true)
+    environment {
+        dockerImage = ''
+        dockerContainer = ''
     }
     stages {
-        stage('Clean Workspace') {
+        stage('Clone Repository') {
             steps {
-                deleteDir()
+                git branch: 'main', url: 'https://github.com/motorfireman/Test.git'
             }
         }
-        stage('Checkout') {
+        stage('Build Docker Image') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']],
-                userRemoteConfigs: [[url: 'https://github.com/motorfireman/Test.git']]])
+                script {
+                    dockerImage = docker.build('password_verification', 'password_verification/')
+                }
             }
         }
-        stage('Build') {
+        stage('Run Docker Container') {
             steps {
-                // Add your build steps here
+                script {
+                    dockerContainer = dockerImage.run('-p 5000:5000')
+                }
+            }
+        }
+        stage('Dependency Check') {
+            steps {
+                // Placeholder for dependency check commands
+                echo 'Running dependency check...'
+            }
+        }
+        stage('UI Testing') {
+            steps {
+                // Placeholder for UI testing commands
+                echo 'Running UI tests...'
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                if (dockerContainer) {
+                    dockerContainer.stop()
+                }
             }
         }
     }

@@ -1,16 +1,17 @@
-version: '3.9'
+version: '3.8'
 
 services:
   jenkins:
-    build: ./jenkins-docker
-    container_name: testcicd-jenkins-1
+    image: jenkins/jenkins:lts
     ports:
       - "8080:8080"
-      - "50000:50000"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
       - jenkins_home:/var/jenkins_home
-    user: root  # Start the container as root
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
 
 volumes:
   jenkins_home:
