@@ -6,8 +6,7 @@ pipeline {
         FLASK_APP = 'app.py'
         PATH = "$VENV_PATH/bin:$PATH"
         SONARQUBE_SCANNER_HOME = tool name: 'SonarQube Scanner'
-        SONARQUBE_USER = 'admin'
-        SONARQUBE_PASS = 'admin123'
+        SONARQUBE_TOKEN = 'squ_9b4d1296ed78b6d5ff7e88d191ae453a2916b528'  // Set your new SonarQube token here
     }
     
     stages {
@@ -70,8 +69,7 @@ pipeline {
                         -Dsonar.projectKey=flask-app \
                         -Dsonar.sources=. \
                         -Dsonar.host.url=http://sonarqube:9000 \
-                        -Dsonar.login=${SONARQUBE_USER} \
-                        -Dsonar.password=${SONARQUBE_PASS}
+                        -Dsonar.login=${SONARQUBE_TOKEN}
                         '''
                     }
                 }
