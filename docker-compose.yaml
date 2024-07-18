@@ -3,8 +3,8 @@ version: "3.8"
 services:
   jenkins:
     build: 
-      context: .
-      dockerfile: Dockerfile.jenkins
+      context: ./jenkins
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
       - "50000:50000"
@@ -46,8 +46,8 @@ services:
 
   flask-app:
     build:
-      context: .
-      dockerfile: Dockerfile.flask
+      context: ./flask-app
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
     environment:
