@@ -6,7 +6,7 @@ pipeline {
         FLASK_APP = 'workspace/flask/app.py'  // Correct path to the Flask app
         PATH = "$VENV_PATH/bin:$PATH"
         SONARQUBE_SCANNER_HOME = tool name: 'SonarQube Scanner'
-		SONARQUBE_TOKEN = 'squ_49cf1a95dfa351b301269a8f0d6a57dc4f59c179'  // Set your new SonarQube token here
+        SONARQUBE_TOKEN = 'squ_9b4d1296ed78b6d5ff7e88d191ae453a2916b528'  // Set your new SonarQube token here
     }
     
     stages {
@@ -57,8 +57,17 @@ pipeline {
                     sh 'sleep 5'
                     // Debugging: Check if the Flask app is running
                     sh 'curl -s http://127.0.0.1:5000 || echo "Flask app did not start"'
-                    // Run a basic UI test using curl
-                    sh 'curl -s http://127.0.0.1:5000 | grep "expected content" || echo "Expected content not found"'
+                    
+                    // Test a strong password
+                    sh '''
+                    curl -s -X POST -F "password=StrongPass123" http://127.0.0.1:5000 | grep "Welcome"
+                    '''
+                    
+                    // Test a weak password
+                    sh '''
+                    curl -s -X POST -F "password=password" http://127.0.0.1:5000 | grep "Password does not meet the requirements"
+                    '''
+                    
                     // Stop the Flask app
                     sh 'pkill -f "flask run"'
                 }
