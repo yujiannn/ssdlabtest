@@ -19,7 +19,7 @@ services:
       context: ./flask
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "5001:5001"
 
 volumes:
   jenkins_home:
