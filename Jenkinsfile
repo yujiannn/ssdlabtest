@@ -69,7 +69,6 @@ pipeline {
                     // Run the new Flask app container
                     sh 'docker run -d -p 5000:5000 flask-app'
                     sh 'sleep 10'
-                    sh 'curl -I http://localhost:5000 || echo "Flask app not running on port 5000"'
                 }
             }
         }
