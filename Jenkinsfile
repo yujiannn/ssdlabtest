@@ -5,6 +5,9 @@ pipeline {
         VENV_PATH = 'venv'
         FLASK_APP = 'app.py'
         PATH = "$VENV_PATH/bin:$PATH"
+		SONARQUBE_SCANNER_HOME = tool name: 'SonarQube Scanner'
+        SONAR_TOKEN = 'squ_00ff2532ea0785b4ab0ed30a5c12fc7d82665f3e'  // Set your SonarQube token here
+
     }
     
     stages {
@@ -57,7 +60,22 @@ pipeline {
                 }
             }
         }
-        
+                
+   stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    dir('workspace/flask') {
+                        sh '''
+                        ${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=flask-app \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://127.0.0.1:9000 \
+                        -Dsonar.login=${SONAR_TOKEN}
+                        '''
+                    }
+                }
+            }
+        }
         stage('Deploy Flask App') {
             steps {
                 script {
