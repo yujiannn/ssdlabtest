@@ -4,7 +4,7 @@ services:
   jenkins:
     build:
       context: ./jenkins
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.jenkins
     ports:
       - "8080:8080"
       - "50000:50000"
@@ -13,13 +13,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
-
-  flask-app:
-    build:
-      context: ./flask
-      dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
 
 volumes:
   jenkins_home:
