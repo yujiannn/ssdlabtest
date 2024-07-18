@@ -58,7 +58,7 @@ pipeline {
                 echo 'Deploying Flask App...'
                 sh 'docker-compose up -d flask-app'
                 sh 'sleep 10'
-                sh 'curl -I http://localhost:5002 || echo "Flask app not running on port 5001"'
+                sh 'curl -I http://localhost:5002 || echo "Flask app not running on port 5002"'
             }
         }
         
