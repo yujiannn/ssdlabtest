@@ -68,6 +68,7 @@ pipeline {
                         ${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=flask-app \
                         -Dsonar.sources=. \
+						-Dsonar.inclusions=app.py \
                         -Dsonar.host.url=http://sonarqube:9000 \
                         -Dsonar.login=${SONARQUBE_TOKEN}
                         '''
