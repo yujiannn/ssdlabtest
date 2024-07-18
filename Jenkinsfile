@@ -41,6 +41,20 @@ pipeline {
             }
         }
         
+        stage('Dependency Check') {
+            steps {
+                script {
+                    // Create the output directory for the dependency check report
+                    sh 'mkdir -p workspace/flask/dependency-check-report'
+                    // Print the dependency check home directory for debugging
+                    sh 'echo "Dependency Check Home: $DEPENDENCY_CHECK_HOME"'
+                    sh 'ls -l $DEPENDENCY_CHECK_HOME/bin'
+                    sh '''
+                    ${DEPENDENCY_CHECK_HOME}/bin/dependency-check.sh --project "Flask App" --scan . --format "ALL" --out workspace/flask/dependency-check-report || true
+                    '''
+                }
+            }
+        }
         
         stage('UI Testing') {
             steps {
@@ -124,6 +138,7 @@ pipeline {
             }
         }
         always {
+            archiveArtifacts artifacts: 'workspace/flask/dependency-check-report/*.*', allowEmptyArchive: true
             archiveArtifacts artifacts: 'workspace/flask/integration-test-results.xml', allowEmptyArchive: true
         }
     }
