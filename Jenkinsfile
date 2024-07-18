@@ -24,7 +24,7 @@ pipeline {
         
         stage('Setup Virtual Environment') {
             steps {
-                dir('workspace/flask') {  // Navigate to the flask directory
+                dir('workspace/flask') {
                     sh 'python3 -m venv $VENV_PATH'
                 }
             }
@@ -32,8 +32,7 @@ pipeline {
         
         stage('Activate Virtual Environment and Install Dependencies') {
             steps {
-                dir('workspace/flask') {  // Navigate to the flask directory
-                    // Activate the virtual environment and install dependencies
+                dir('workspace/flask') {
                     sh '. $VENV_PATH/bin/activate && pip install -r requirements.txt'
                 }
             }
@@ -58,7 +57,7 @@ pipeline {
                 echo 'Deploying Flask App...'
                 sh 'docker-compose up -d flask-app'
                 sh 'sleep 10'
-                sh 'curl -I http://localhost:5002 || echo "Flask app not running on port 5002"'
+                sh 'curl -I http://localhost:5003 || echo "Flask app not running on port 5003"'
             }
         }
         
