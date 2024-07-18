@@ -7,6 +7,7 @@ pipeline {
         PATH = "$VENV_PATH/bin:$PATH"
         SONARQUBE_SCANNER_HOME = tool name: 'SonarQube Scanner'
         SONARQUBE_TOKEN = 'squ_9b4d1296ed78b6d5ff7e88d191ae453a2916b528'  // Set your new SonarQube token here
+        DEPENDENCY_CHECK_HOME = tool name: 'OWASP Dependency-Check'
     }
     
     stages {
@@ -43,7 +44,9 @@ pipeline {
         stage('Dependency Check') {
             steps {
                 dir('workspace/flask') {
-                    sh '. $VENV_PATH/bin/activate && pip check'  // Check for broken or conflicting dependencies
+                    sh '''
+                    ${DEPENDENCY_CHECK_HOME}/bin/dependency-check.sh --project "Flask App" --scan . --format "ALL" --out dependency-check-report
+                    '''
                 }
             }
         }
@@ -120,6 +123,9 @@ pipeline {
             script {
                 echo 'Build failed, not deploying Flask app.'
             }
+        }
+        always {
+            archiveArtifacts artifacts: 'workspace/flask/dependency-check-report/*.*', allowEmptyArchive: true
         }
     }
 }
