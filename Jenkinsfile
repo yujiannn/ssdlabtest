@@ -55,14 +55,18 @@ pipeline {
         success {
             script {
                 echo 'Deploying Flask App...'
-                // Stop any running container on port 5000
-                sh 'docker ps --filter "publish=5000" --format "{{.ID}}" | xargs -r docker stop'
-                // Remove the stopped container
-                sh 'docker ps -a --filter "status=exited" --filter "publish=5000" --format "{{.ID}}" | xargs -r docker rm'
-                // Deploy the new Flask app container
+                sh 'docker ps --filter publish=5000 --format "{{.ID}}" | xargs -r docker stop'
+                sh 'docker ps -a --filter status=exited --filter publish=5000 --format "{{.ID}}" | xargs -r docker rm'
                 sh 'docker-compose up -d flask-app'
                 sh 'sleep 10'
-                sh 'curl -I http://localhost:5000 || echo "Flask app not running on port 5000"'
+                script {
+                    def response = sh(script: 'curl -I http://localhost:5000', returnStatus: true)
+                    if (response != 0) {
+                        echo 'Flask app not running on port 5000, fetching logs...'
+                        sh 'docker logs $(docker ps -q --filter "ancestor=flask-app")'
+                        error 'Flask app failed to start'
+                    }
+                }
             }
         }
         
