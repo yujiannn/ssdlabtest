@@ -2,9 +2,12 @@ pipeline {
     agent any
 
     environment {
-        FLASK_APP = 'flask/app.py'
+        VENV_PATH = 'venv'
+        FLASK_APP = 'workspace/flask/app.py'
+        PATH = "$VENV_PATH/bin:$PATH"
         SONARQUBE_SCANNER_HOME = tool name: 'SonarQube Scanner'
-        SONARQUBE_TOKEN = 'your_sonarqube_token_here'
+        SONARQUBE_TOKEN = 'squ_046c2792ae7323c489f090270511883109604beb'
+        DEPENDENCY_CHECK_HOME = '/var/jenkins_home/tools/org.jenkinsci.plugins.DependencyCheck.tools.DependencyCheckInstallation/OWASP_Dependency-Check/dependency-check'
     }
     
     stages {
@@ -16,72 +19,75 @@ pipeline {
         
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/yujiannn/ssdlabtest.git'
+                dir('workspace') {
+                    git branch: 'main', url: 'https://github.com/yujiannn/ssdlabtest.git'
+                }
             }
         }
         
         stage('Setup Virtual Environment') {
             steps {
-                dir('flask') {
-                    sh 'python3 -m venv venv'
+                dir('workspace/flask') {
+                    sh 'python3 -m venv $VENV_PATH'
                 }
             }
         }
         
         stage('Activate Virtual Environment and Install Dependencies') {
             steps {
-                dir('flask') {
-                    sh '. venv/bin/activate && pip install -r requirements.txt'
+                dir('workspace/flask') {
+                    sh '. $VENV_PATH/bin/activate && pip install -r requirements.txt'
                 }
             }
         }
-
-        stage('Build Docker Image') {
-            steps {
-                dir('flask') {
-                    sh 'docker build -t flask-app .'
-                }
-            }
-        }
-
-        stage('Run Docker Container') {
+        
+        stage('Dependency Check') {
             steps {
                 script {
-                    // Stop any running container on port 5000
-                    sh 'docker ps --filter publish=5000 --format "{{.ID}}" | xargs -r docker stop'
-                    // Remove the stopped container
-                    sh 'docker ps -a --filter status=exited --filter publish=5000 --format "{{.ID}}" | xargs -r docker rm'
-                    // Run the new Flask app container
-                    sh 'docker run -d --name flask_container -p 5000:5000 flask-app'
-                    sleep 10 // Allow time for the Flask app to start
-                    sh 'docker logs flask_container' // Check container logs
+                    sh 'mkdir -p workspace/flask/dependency-check-report'
+                    sh 'echo "Dependency Check Home: $DEPENDENCY_CHECK_HOME"'
+                    sh 'ls -l $DEPENDENCY_CHECK_HOME/bin'
+                    sh '''
+                    ${DEPENDENCY_CHECK_HOME}/bin/dependency-check.sh --project "Flask App" --scan . --format "ALL" --out workspace/flask/dependency-check-report || true
+                    '''
                 }
             }
         }
-
+        
         stage('UI Testing') {
             steps {
                 script {
-                    // Get container IP
-                    def containerIP = sh(script: 'docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" flask_container', returnStdout: true).trim()
-                    // Test application using the container's IP
-                    sh "curl -s http://${containerIP}:5000 || echo 'Flask app did not start'"
-                    // Test a strong password
+                    sh '. $VENV_PATH/bin/activate && FLASK_APP=$FLASK_APP flask run &'
+                    sh 'sleep 5'
+                    sh 'curl -s http://127.0.0.1:5000 || echo "Flask app did not start"'
+                    
+                    // Test the login with the correct username and password
                     sh '''
-                    curl -s -X POST -F "password=StrongPass123" http://${containerIP}:5000 | grep "Welcome"
+                    curl -s -X POST -F "username=student" -F "password=2202855" http://127.0.0.1:5000 | grep "Welcome"
                     '''
-                    // Test a weak password
+                    
+                    // Test the login with incorrect credentials
                     sh '''
-                    curl -s -X POST -F "password=password" http://${containerIP}:5000 | grep "Password does not meet the requirements"
+                    curl -s -X POST -F "username=student" -F "password=wrongpassword" http://127.0.0.1:5000 | grep "Invalid username or password"
                     '''
+                    
+                    sh 'pkill -f "flask run"'
                 }
             }
         }
         
         stage('Integration Testing') {
             steps {
-                dir('flask') {
-                    sh '. venv/bin/activate && pytest --junitxml=integration-test-results.xml'
+                dir('workspace/flask') {
+                    sh '. $VENV_PATH/bin/activate && pytest --junitxml=integration-test-results.xml'
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                dir('workspace/flask') {
+                    sh 'docker build -t flask-app .'
                 }
             }
         }
@@ -89,7 +95,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    dir('flask') {
+                    dir('workspace/flask') {
                         sh '''
                         ${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=flask-app \
@@ -107,7 +113,10 @@ pipeline {
             steps {
                 script {
                     echo 'Deploying Flask App...'
-                    // Additional deployment steps if necessary
+                    sh 'docker ps --filter publish=5000 --format "{{.ID}}" | xargs -r docker stop'
+                    sh 'docker ps -a --filter status=exited --filter publish=5000 --format "{{.ID}}" | xargs -r docker rm'
+                    sh 'docker run -d -p 5000:5000 flask-app'
+                    sh 'sleep 10'
                 }
             }
         }
@@ -120,12 +129,8 @@ pipeline {
             }
         }
         always {
-            archiveArtifacts artifacts: 'flask/integration-test-results.xml', allowEmptyArchive: true
-        }
-        cleanup {
-            // Cleanup the Docker container
-            sh 'docker stop flask_container || true'
-            sh 'docker rm flask_container || true'
+            archiveArtifacts artifacts: 'workspace/flask/dependency-check-report/*.*', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'workspace/flask/integration-test-results.xml', allowEmptyArchive: true
         }
     }
 }

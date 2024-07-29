@@ -1,38 +1,51 @@
-from flask import Flask, request, render_template_string
-import re
-import requests
+from flask import Flask, request, render_template_string, redirect, url_for, session
+import uuid
+import bcrypt
 
 app = Flask(__name__)
+app.secret_key = 'supersecretkey'  # Replace with a secure secret key in a real application
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['PERMANENT_SESSION_LIFETIME'] = 60  # 1 minute timeout
 
-# URL of the common passwords list
-COMMON_PASSWORDS_URL = 'https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/Common-Credentials/10-million-password-list-top-1000.txt'
-common_passwords = set(requests.get(COMMON_PASSWORDS_URL).text.splitlines())
+# Hardcoded username and hashed password
+USERNAME = 'student'
+PASSWORD_HASH = bcrypt.hashpw('2202855'.encode('utf-8'), bcrypt.gensalt())
 
-def is_password_strong(password):
-    # Check if the password is at least 10 characters long
-    if len(password) < 10:
-        return False
-    # Check if the password is in the common passwords list
-    if password in common_passwords:
-        return False
-    return True
+def verify_password(password):
+    return bcrypt.checkpw(password.encode('utf-8'), PASSWORD_HASH)
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
+        username = request.form['username']
         password = request.form['password']
-        if is_password_strong(password):
-            return render_template_string(WELCOME_PAGE_TEMPLATE, password=password)
+        if username == USERNAME and verify_password(password):
+            session['username'] = USERNAME
+            session['session_id'] = str(uuid.uuid4())
+            session.permanent = True
+            return redirect(url_for('dashboard'))
         else:
-            return render_template_string(HOME_PAGE_TEMPLATE, error='Password does not meet the requirements.')
-    return render_template_string(HOME_PAGE_TEMPLATE)
+            return render_template_string(LOGIN_PAGE_TEMPLATE, error='Invalid username or password.')
+    return render_template_string(LOGIN_PAGE_TEMPLATE)
 
-HOME_PAGE_TEMPLATE = '''
+@app.route('/dashboard')
+def dashboard():
+    if 'username' not in session:
+        return redirect(url_for('home'))
+    return render_template_string(DASHBOARD_TEMPLATE, session_id=session['session_id'])
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('home'))
+
+LOGIN_PAGE_TEMPLATE = '''
 <!doctype html>
-<title>Password Verification</title>
-<h1>Enter your password</h1>
+<title>Login</title>
+<h1>Login</h1>
 <form method=post>
-    <input type=password name=password>
+    <input type=text name=username placeholder="Username" required>
+    <input type=password name=password placeholder="Password" required>
     <input type=submit value=Login>
 </form>
 {% if error %}
@@ -40,12 +53,12 @@ HOME_PAGE_TEMPLATE = '''
 {% endif %}
 '''
 
-WELCOME_PAGE_TEMPLATE = '''
+DASHBOARD_TEMPLATE = '''
 <!doctype html>
-<title>Welcome</title>
+<title>Dashboard</title>
 <h1>Welcome!</h1>
-<p>Your password: {{ password }}</p>
-<a href="/">Logout</a>
+<p>Your session ID: {{ session_id }}</p>
+<a href="/logout">Logout</a>
 '''
 
 if __name__ == '__main__':
