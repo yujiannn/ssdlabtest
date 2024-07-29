@@ -62,15 +62,17 @@ pipeline {
         stage('UI Testing') {
             steps {
                 script {
-                    // Test application
-                    sh 'curl -s http://localhost:5000 || echo "Flask app did not start"'
+                    // Get container IP
+                    def containerIP = sh(script: 'docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" flask_container', returnStdout: true).trim()
+                    // Test application using the container's IP
+                    sh "curl -s http://${containerIP}:5000 || echo 'Flask app did not start'"
                     // Test a strong password
                     sh '''
-                    curl -s -X POST -F "password=StrongPass123" http://localhost:5000 | grep "Welcome"
+                    curl -s -X POST -F "password=StrongPass123" http://${containerIP}:5000 | grep "Welcome"
                     '''
                     // Test a weak password
                     sh '''
-                    curl -s -X POST -F "password=password" http://localhost:5000 | grep "Password does not meet the requirements"
+                    curl -s -X POST -F "password=password" http://${containerIP}:5000 | grep "Password does not meet the requirements"
                     '''
                 }
             }
