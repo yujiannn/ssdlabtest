@@ -2,7 +2,9 @@ pipeline {
     agent any
 
     environment {
+        VENV_PATH = 'venv'
         FLASK_APP = 'workspace/flask/app.py'  // Correct path to the Flask app
+        PATH = "$VENV_PATH/bin:$PATH"
         SONARQUBE_SCANNER_HOME = tool name: 'SonarQube Scanner'
         SONARQUBE_TOKEN = 'squ_046c2792ae7323c489f090270511883109604beb'  // Set your new SonarQube token here
         DEPENDENCY_CHECK_HOME = '/var/jenkins_home/tools/org.jenkinsci.plugins.DependencyCheck.tools.DependencyCheckInstallation/OWASP_Dependency-Check/dependency-check'
@@ -23,10 +25,18 @@ pipeline {
             }
         }
         
-        stage('Install Dependencies') {
+        stage('Setup Virtual Environment') {
             steps {
                 dir('workspace/flask') {
-                    sh 'pip install -r requirements.txt'
+                    sh 'python3 -m venv $VENV_PATH'
+                }
+            }
+        }
+        
+        stage('Activate Virtual Environment and Install Dependencies') {
+            steps {
+                dir('workspace/flask') {
+                    sh '. $VENV_PATH/bin/activate && pip install -r requirements.txt'
                 }
             }
         }
@@ -50,7 +60,7 @@ pipeline {
             steps {
                 script {
                     // Start the Flask app in the background
-                    sh 'FLASK_APP=$FLASK_APP flask run &'
+                    sh '. $VENV_PATH/bin/activate && FLASK_APP=$FLASK_APP flask run &'
                     // Give the server a moment to start
                     sh 'sleep 5'
                     // Debugging: Check if the Flask app is running
@@ -75,7 +85,7 @@ pipeline {
         stage('Integration Testing') {
             steps {
                 dir('workspace/flask') {
-                    sh 'pytest --junitxml=integration-test-results.xml'
+                    sh '. $VENV_PATH/bin/activate && pytest --junitxml=integration-test-results.xml'
                 }
             }
         }
