@@ -2,12 +2,9 @@ pipeline {
     agent any
 
     environment {
-        VENV_PATH = 'venv'
-        FLASK_APP = 'workspace/flask/app.py'  // Correct path to the Flask app
-        PATH = "$VENV_PATH/bin:$PATH"
+        FLASK_APP = 'flask/app.py'  // Correct path to the Flask app
         SONARQUBE_SCANNER_HOME = tool name: 'SonarQube Scanner'
-        SONARQUBE_TOKEN = 'squ_046c2792ae7323c489f090270511883109604beb'  // Set your new SonarQube token here
-        DEPENDENCY_CHECK_HOME = '/var/jenkins_home/tools/org.jenkinsci.plugins.DependencyCheck.tools.DependencyCheckInstallation/OWASP_Dependency-Check/dependency-check'
+        SONARQUBE_TOKEN = 'your_sonarqube_token_here'
     }
     
     stages {
@@ -19,80 +16,68 @@ pipeline {
         
         stage('Clone Repository') {
             steps {
-                dir('workspace') {
-                    git branch: 'main', url: 'https://github.com/yujiannn/ssdlabtest.git'
-                }
+                git branch: 'main', url: 'https://github.com/yujiannn/ssdlabtest.git'
             }
         }
         
         stage('Setup Virtual Environment') {
             steps {
-                dir('workspace/flask') {
-                    sh 'python3 -m venv $VENV_PATH'
+                dir('flask') {
+                    sh 'python3 -m venv venv'
                 }
             }
         }
         
         stage('Activate Virtual Environment and Install Dependencies') {
             steps {
-                dir('workspace/flask') {
-                    sh '. $VENV_PATH/bin/activate && pip install -r requirements.txt'
+                dir('flask') {
+                    sh '. venv/bin/activate && pip install -r requirements.txt'
                 }
             }
         }
         
-        // stage('Dependency Check') {
-        //     steps {
-        //         script {
-        //             // Create the output directory for the dependency check report
-        //             sh 'mkdir -p workspace/flask/dependency-check-report'
-        //             // Print the dependency check home directory for debugging
-        //             sh 'echo "Dependency Check Home: $DEPENDENCY_CHECK_HOME"'
-        //             sh 'ls -l $DEPENDENCY_CHECK_HOME/bin'
-        //             sh '''
-        //             ${DEPENDENCY_CHECK_HOME}/bin/dependency-check.sh --project "Flask App" --scan . --format "ALL" --out workspace/flask/dependency-check-report || true
-        //             '''
-        //         }
-        //     }
-        // }
-        
         stage('UI Testing') {
             steps {
-                script {
-                    // Start the Flask app in the background
-                    sh '. $VENV_PATH/bin/activate && FLASK_APP=$FLASK_APP flask run &'
-                    // Give the server a moment to start
-                    sh 'sleep 5'
-                    // Debugging: Check if the Flask app is running
-                    sh 'curl -s http://127.0.0.1:5000 || echo "Flask app did not start"'
-                    
-                    // Test a strong password
-                    sh '''
-                    curl -s -X POST -F "password=StrongPass123" http://127.0.0.1:5000 | grep "Welcome"
-                    '''
-                    
-                    // Test a weak password
-                    sh '''
-                    curl -s -X POST -F "password=password" http://127.0.0.1:5000 | grep "Password does not meet the requirements"
-                    '''
-                    
-                    // Stop the Flask app
-                    sh 'pkill -f "flask run"'
+                dir('flask') {
+                    script {
+                        // Debugging: Check the current directory and list contents
+                        sh 'pwd'
+                        sh 'ls -la'
+                        // Activate the virtual environment and start the Flask app
+                        sh '. venv/bin/activate && FLASK_APP=$FLASK_APP flask run &'
+                        // Give the server a moment to start
+                        sh 'sleep 5'
+                        // Debugging: Check if the Flask app is running
+                        sh 'curl -s http://127.0.0.1:5000 || echo "Flask app did not start"'
+                        
+                        // Test a strong password
+                        sh '''
+                        curl -s -X POST -F "password=StrongPass123" http://127.0.0.1:5000 | grep "Welcome"
+                        '''
+                        
+                        // Test a weak password
+                        sh '''
+                        curl -s -X POST -F "password=password" http://127.0.0.1:5000 | grep "Password does not meet the requirements"
+                        '''
+                        
+                        // Stop the Flask app
+                        sh 'pkill -f "flask run"'
+                    }
                 }
             }
         }
         
         stage('Integration Testing') {
             steps {
-                dir('workspace/flask') {
-                    sh '. $VENV_PATH/bin/activate && pytest --junitxml=integration-test-results.xml'
+                dir('flask') {
+                    sh '. venv/bin/activate && pytest --junitxml=integration-test-results.xml'
                 }
             }
         }
         
         stage('Build Docker Image') {
             steps {
-                dir('workspace/flask') {
+                dir('flask') {
                     sh 'docker build -t flask-app .'
                 }
             }
@@ -101,7 +86,7 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    dir('workspace/flask') {
+                    dir('flask') {
                         sh '''
                         ${SONARQUBE_SCANNER_HOME}/bin/sonar-scanner \
                         -Dsonar.projectKey=flask-app \
@@ -138,8 +123,7 @@ pipeline {
             }
         }
         always {
-            archiveArtifacts artifacts: 'workspace/flask/dependency-check-report/*.*', allowEmptyArchive: true
-            archiveArtifacts artifacts: 'workspace/flask/integration-test-results.xml', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'flask/integration-test-results.xml', allowEmptyArchive: true
         }
     }
 }
